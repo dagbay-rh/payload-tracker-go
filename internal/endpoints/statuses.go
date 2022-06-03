@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/redhatinsights/payload-tracker-go/internal/queries"
 	l "github.com/redhatinsights/payload-tracker-go/internal/logging"
+	"github.com/redhatinsights/payload-tracker-go/internal/queries"
 	"github.com/redhatinsights/payload-tracker-go/internal/structs"
 )
 
@@ -42,7 +42,7 @@ func Statuses(w http.ResponseWriter, r *http.Request) {
 		writeResponse(w, http.StatusBadRequest, getErrorBody(message, http.StatusBadRequest))
 		return
 	}
-	count, payloads := RetrieveStatuses(getDb(), q)
+	count, payloads := RetrieveStatuses(Db(), q)
 	duration := time.Since(start).Seconds()
 
 	statusesData := structs.StatusesData{count, duration, payloads}

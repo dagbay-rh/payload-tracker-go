@@ -18,6 +18,7 @@ var (
 	RetrievePayloads          = queries.RetrievePayloads
 	RetrieveRequestIdPayloads = queries.RetrieveRequestIdPayloads
 	RequestArchiveLink        = requestArchiveLink
+	Db                        = getDb
 )
 
 var (
@@ -62,7 +63,7 @@ func Payloads(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	count, payloads := RetrievePayloads(getDb(), q.Page, q.PageSize, q)
+	count, payloads := RetrievePayloads(Db(), q.Page, q.PageSize, q)
 	duration := time.Since(start).Seconds()
 	observeDBTime(time.Since(start))
 
@@ -102,7 +103,7 @@ func RequestIdPayloads(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	payloads := RetrieveRequestIdPayloads(getDb(), reqID, q.SortBy, q.SortDir, verbosity)
+	payloads := RetrieveRequestIdPayloads(Db(), reqID, q.SortBy, q.SortDir, verbosity)
 
 	if payloads == nil || len(payloads) == 0 {
 		writeResponse(w, http.StatusNotFound, getErrorBody("payload with id: "+reqID+" not found", http.StatusNotFound))
