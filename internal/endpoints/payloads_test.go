@@ -18,7 +18,6 @@ import (
 	"github.com/redhatinsights/payload-tracker-go/internal/endpoints"
 	"github.com/redhatinsights/payload-tracker-go/internal/models"
 	"github.com/redhatinsights/payload-tracker-go/internal/structs"
-	"github.com/redhatinsights/payload-tracker-go/internal/utils/test"
 )
 
 func getUUID() string {
@@ -99,15 +98,12 @@ func getFourReqIdStatuses(requestId string, verbosity string) []structs.SinglePa
 }
 
 func makeTestRequest(uri string, queryParams map[string]interface{}) (*http.Request, error) {
-	var req *http.Request
-	var err error
-
 	fullURI := uri
 	if len(queryParams) > 0 {
 		fullURI += "?" + formattedQuery(queryParams)
 	}
 
-	req, err = http.NewRequest("GET", fullURI, nil)
+	req, err := http.NewRequest("GET", fullURI, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -356,6 +352,7 @@ var _ = Describe("RequestIdPayloads", func() {
 		Context("With valid data from DB", func() {
 			It("should pass the data forward", func() {
 				req, err := makeTestRequest(fmt.Sprintf("/api/v1/payloads/%s", requestId), query)
+				fmt.Println("test request_id...", requestId)
 				Expect(err).To(BeNil())
 
 				reqIdPayloadData = reqIdStatuses
@@ -533,109 +530,4 @@ var _ = Describe("PayloadArchiveLink", func() {
 		})
 	})
 
-})
-
-var _ = Describe("Payloads with DB", func() {
-	var (
-		handler http.Handler
-		rr      *httptest.ResponseRecorder
-		query   map[string]interface{}
-	)
-
-	db := test.WithDatabase()
-
-	BeforeEach(func() {
-		rr = httptest.NewRecorder()
-		handler = http.HandlerFunc(endpoints.Payloads)
-
-		query = make(map[string]interface{})
-
-		endpoints.Db = db
-	})
-
-	Context("With payloads data in DB", func() {
-		It("retrieves payload", func() {
-			inventoryId := getUUID()
-
-			query["inventory_id"] = inventoryId
-			req, err := makeTestRequest("/api/v1/payloads", query)
-			Expect(err).To(BeNil())
-
-			payloadData := models.Payloads{
-				Account:     "test",
-				RequestId:   getUUID(),
-				InventoryId: inventoryId,
-				SystemId:    getUUID(),
-			}
-
-			Expect(db().Create(&payloadData).Error).ToNot(HaveOccurred())
-
-			handler.ServeHTTP(rr, req)
-			Expect(rr.Code).To(Equal(200))
-			Expect(rr.Body).ToNot(BeNil())
-
-			var respData structs.PayloadsData
-
-			readBody, _ := ioutil.ReadAll(rr.Body)
-			json.Unmarshal(readBody, &respData)
-
-			Expect(respData.Data[0].RequestId).To(Equal(payloadData.RequestId))
-			Expect(respData.Data[0].InventoryId).To(Equal(payloadData.InventoryId))
-			Expect(respData.Data[0].SystemId).To(Equal(payloadData.SystemId))
-		})
-	})
-
-	Context("With payload statuses data in DB", func() {
-		It("retrieves request_id payload", func() {
-			requestId := getUUID()
-
-			req, err := makeTestRequest(fmt.Sprintf("/api/v1/payloads/%s", requestId), query)
-			Expect(err).To(BeNil())
-
-			payloadData := models.Payloads{
-				Account:     "test",
-				RequestId:   requestId,
-				InventoryId: getUUID(),
-				SystemId:    getUUID(),
-			}
-			statusData := models.Statuses{Name: "test-status"}
-			sourceData := models.Sources{Name: "test-source"}
-			serviceData := models.Services{Name: "test-service"}
-
-			Expect(db().Create(&payloadData).Error).ToNot(HaveOccurred())
-			Expect(db().Create(&statusData).Error).ToNot(HaveOccurred())
-			Expect(db().Create(&sourceData).Error).ToNot(HaveOccurred())
-			Expect(db().Create(&serviceData).Error).ToNot(HaveOccurred())
-
-			payloadDate, _ := time.Parse(time.RFC3339, "2022-06-03T14:00:32.253Z")
-			payloadStatusData := models.PayloadStatuses{
-				PayloadId: payloadData.Id,
-				Status:    statusData,
-				Source:    sourceData,
-				Service:   serviceData,
-				StatusMsg: "test-status-msg",
-				Date:      payloadDate,
-			}
-			Expect(db().Create(&payloadStatusData).Error).ToNot(HaveOccurred())
-
-			handler.ServeHTTP(rr, req)
-			Expect(rr.Code).To(Equal(200))
-			Expect(rr.Body).ToNot(BeNil())
-
-			var respData structs.PayloadRetrievebyID
-			readBody, _ := ioutil.ReadAll(rr.Body)
-			json.Unmarshal(readBody, &respData)
-
-			Expect(respData.Data[0].Service).To(Equal(payloadStatusData.Service.Name))
-			Expect(respData.Data[0].Account).To(Equal(payloadData.Account))
-			Expect(respData.Data[0].OrgID).To(Equal(payloadData.OrgId))
-			Expect(respData.Data[0].RequestID).To(Equal(payloadData.RequestId))
-			Expect(respData.Data[0].InventoryID).To(Equal(payloadData.InventoryId))
-			Expect(respData.Data[0].SystemID).To(Equal(payloadData.SystemId))
-			Expect(respData.Data[0].Status).To(Equal(payloadStatusData.Status.Name))
-			Expect(respData.Data[0].StatusMsg).To(Equal(payloadStatusData.StatusMsg))
-			Expect(respData.Data[0].Date.String()).To(Equal(payloadStatusData.Date.String()))
-			Expect(respData.Data[1].Source).To(Equal(payloadStatusData.Source.Name))
-		})
-	})
 })
