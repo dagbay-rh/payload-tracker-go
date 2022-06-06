@@ -18,19 +18,12 @@ import (
 	"github.com/redhatinsights/payload-tracker-go/internal/endpoints"
 	"github.com/redhatinsights/payload-tracker-go/internal/models"
 	"github.com/redhatinsights/payload-tracker-go/internal/structs"
+	"github.com/redhatinsights/payload-tracker-go/internal/utils/test"
 )
 
 func getUUID() string {
 	newUUID := uuid.New()
 	return newUUID.String()
-}
-
-func formattedQuery(params map[string]interface{}) string {
-	formatted := ""
-	for k, v := range params {
-		formatted += fmt.Sprintf("&%v=%v", k, v)
-	}
-	return formatted[1:]
 }
 
 func dataPerVerbosity(requestId string, verbosity string, d1 time.Time) structs.SinglePayloadData {
@@ -97,19 +90,6 @@ func getFourReqIdStatuses(requestId string, verbosity string) []structs.SinglePa
 	return []structs.SinglePayloadData{p1, p2, p3, p4, p5, p6}
 }
 
-func makeTestRequest(uri string, queryParams map[string]interface{}) (*http.Request, error) {
-	fullURI := uri
-	if len(queryParams) > 0 {
-		fullURI += "?" + formattedQuery(queryParams)
-	}
-
-	req, err := http.NewRequest("GET", fullURI, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
 
 var (
 	payloadReturnCount int64
@@ -150,7 +130,7 @@ var _ = Describe("Payloads", func() {
 	Describe("Get to payloads endpoint", func() {
 		Context("With a valid request", func() {
 			It("should return HTTP 200", func() {
-				req, err := makeTestRequest("/api/v1/payloads", query)
+				req, err := test.MakeTestRequest("/api/v1/payloads", query)
 				Expect(err).To(BeNil())
 				handler.ServeHTTP(rr, req)
 				Expect(rr.Code).To(Equal(200))
@@ -160,7 +140,7 @@ var _ = Describe("Payloads", func() {
 
 		Context("With valid data from DB", func() {
 			It("should not mutate any data", func() {
-				req, err := makeTestRequest("/api/v1/payloads", query)
+				req, err := test.MakeTestRequest("/api/v1/payloads", query)
 				Expect(err).To(BeNil())
 
 				payloadData := models.Payloads{
@@ -194,7 +174,7 @@ var _ = Describe("Payloads", func() {
 		Context("With invalid sort_dir parameter", func() {
 			It("should return HTTP 400", func() {
 				query["sort_dir"] = "ascs"
-				req, err := makeTestRequest("/api/v1/payloads", query)
+				req, err := test.MakeTestRequest("/api/v1/payloads", query)
 				Expect(err).To(BeNil())
 				handler.ServeHTTP(rr, req)
 				Expect(rr.Code).To(Equal(400))
@@ -205,7 +185,7 @@ var _ = Describe("Payloads", func() {
 		Context("With invalid sort_by parameter", func() {
 			It("should return HTTP 400", func() {
 				query["sort_by"] = "request_id"
-				req, err := makeTestRequest("/api/v1/payloads", query)
+				req, err := test.MakeTestRequest("/api/v1/payloads", query)
 				Expect(err).To(BeNil())
 				handler.ServeHTTP(rr, req)
 				Expect(rr.Code).To(Equal(400))
@@ -224,7 +204,7 @@ var _ = Describe("Payloads", func() {
 				for k, v := range validTimestamps {
 					query = make(map[string]interface{})
 					query[k] = v
-					req, err := makeTestRequest("/api/v1/payloads", query)
+					req, err := test.MakeTestRequest("/api/v1/payloads", query)
 					Expect(err).To(BeNil())
 					handler.ServeHTTP(rr, req)
 					Expect(rr.Code).To(Equal(200))
@@ -244,7 +224,7 @@ var _ = Describe("Payloads", func() {
 				for k, v := range invalidTimestamps {
 					query = make(map[string]interface{})
 					query[k] = v
-					req, err := makeTestRequest("/api/v1/payloads", query)
+					req, err := test.MakeTestRequest("/api/v1/payloads", query)
 					Expect(err).To(BeNil())
 					handler.ServeHTTP(rr, req)
 					Expect(rr.Code).To(Equal(400))
@@ -278,7 +258,7 @@ var _ = Describe("RequestIdPayloads", func() {
 		reqIdStatuses := getFourReqIdStatuses(requestId, "2")
 		Context("with a valid request", func() {
 			It("should return HTTP 200", func() {
-				req, err := makeTestRequest(fmt.Sprintf("/api/v1/payloads/%s", requestId), query)
+				req, err := test.MakeTestRequest(fmt.Sprintf("/api/v1/payloads/%s", requestId), query)
 				Expect(err).To(BeNil())
 
 				reqIdPayloadData = reqIdStatuses
@@ -290,7 +270,7 @@ var _ = Describe("RequestIdPayloads", func() {
 
 		Context("with an invalid request id, and db returns empty set", func() {
 			It("should return HTTP 404", func() {
-				req, err := makeTestRequest(fmt.Sprintf("/api/v1/payloads/%s", requestId), query)
+				req, err := test.MakeTestRequest(fmt.Sprintf("/api/v1/payloads/%s", requestId), query)
 				Expect(err).To(BeNil())
 
 				reqIdPayloadData = make([]structs.SinglePayloadData, 0)
@@ -309,7 +289,7 @@ var _ = Describe("RequestIdPayloads", func() {
 
 		Context("with an invalid request id, and db returns nil", func() {
 			It("should return HTTP 404", func() {
-				req, err := makeTestRequest(fmt.Sprintf("/api/v1/payloads/%s", requestId), query)
+				req, err := test.MakeTestRequest(fmt.Sprintf("/api/v1/payloads/%s", requestId), query)
 				Expect(err).To(BeNil())
 
 				reqIdPayloadData = nil
@@ -329,7 +309,7 @@ var _ = Describe("RequestIdPayloads", func() {
 		Context("With invalid sort_dir parameter", func() {
 			It("should return HTTP 400", func() {
 				query["sort_dir"] = "des"
-				req, err := makeTestRequest(fmt.Sprintf("/api/v1/payloads/%s", requestId), query)
+				req, err := test.MakeTestRequest(fmt.Sprintf("/api/v1/payloads/%s", requestId), query)
 				Expect(err).To(BeNil())
 				handler.ServeHTTP(rr, req)
 				Expect(rr.Code).To(Equal(400))
@@ -340,7 +320,7 @@ var _ = Describe("RequestIdPayloads", func() {
 		Context("With invalid sort_by parameter", func() {
 			It("should return HTTP 400", func() {
 				query["sort_by"] = "account"
-				req, err := makeTestRequest(fmt.Sprintf("/api/v1/payloads/%s", requestId), query)
+				req, err := test.MakeTestRequest(fmt.Sprintf("/api/v1/payloads/%s", requestId), query)
 				Expect(err).To(BeNil())
 				handler.ServeHTTP(rr, req)
 				Expect(rr.Code).To(Equal(400))
@@ -351,8 +331,8 @@ var _ = Describe("RequestIdPayloads", func() {
 		reqIdStatuses = getFourReqIdStatuses(requestId, "2")
 		Context("With valid data from DB", func() {
 			It("should pass the data forward", func() {
-				req, err := makeTestRequest(fmt.Sprintf("/api/v1/payloads/%s", requestId), query)
-				fmt.Println("test request_id...", requestId)
+				req, err := test.MakeTestRequest(fmt.Sprintf("/api/v1/payloads/%s", requestId), query)
+
 				Expect(err).To(BeNil())
 
 				reqIdPayloadData = reqIdStatuses
@@ -380,7 +360,7 @@ var _ = Describe("RequestIdPayloads", func() {
 			})
 
 			It("should correctly calculate durations", func() {
-				req, err := makeTestRequest(fmt.Sprintf("/api/v1/payloads/%s", requestId), query)
+				req, err := test.MakeTestRequest(fmt.Sprintf("/api/v1/payloads/%s", requestId), query)
 				Expect(err).To(BeNil())
 
 				reqIdPayloadData = reqIdStatuses
@@ -401,7 +381,7 @@ var _ = Describe("RequestIdPayloads", func() {
 		reqIdStatuses = getFourReqIdStatuses(requestId, "1")
 		Context("Get to /payloads/{request_id} Verbosity 1", func() {
 			It("should pass the data forward", func() {
-				req, err := makeTestRequest(fmt.Sprintf("/api/v1/payloads/%s", requestId), query)
+				req, err := test.MakeTestRequest(fmt.Sprintf("/api/v1/payloads/%s", requestId), query)
 				Expect(err).To(BeNil())
 
 				reqIdPayloadData = reqIdStatuses
@@ -428,7 +408,7 @@ var _ = Describe("RequestIdPayloads", func() {
 		reqIdStatuses = getFourReqIdStatuses(requestId, "0")
 		Context("Get to /payloads/{request_id} Verbosity 0", func() {
 			It("should pass the data forward", func() {
-				req, err := makeTestRequest(fmt.Sprintf("/api/v1/payloads/%s", requestId), query)
+				req, err := test.MakeTestRequest(fmt.Sprintf("/api/v1/payloads/%s", requestId), query)
 				Expect(err).To(BeNil())
 
 				reqIdPayloadData = reqIdStatuses
@@ -480,7 +460,7 @@ var _ = Describe("PayloadArchiveLink", func() {
 
 	Context("When the request_id is not a valid UUID", func() {
 		It("Should return 400", func() {
-			req, err := makeTestRequest("/api/v1/payloads/1234/archiveLink", query)
+			req, err := test.MakeTestRequest("/api/v1/payloads/1234/archiveLink", query)
 			Expect(err).To(BeNil())
 			req.Header.Set("x-rh-identity", validIdentityHeader)
 			handler.ServeHTTP(rr, req)
@@ -490,7 +470,7 @@ var _ = Describe("PayloadArchiveLink", func() {
 
 	Context("With a missing Identity header", func() {
 		It("Should return 401", func() {
-			req, err := makeTestRequest(fmt.Sprintf("/api/v1/payloads/%s/archiveLink", requestId), query)
+			req, err := test.MakeTestRequest(fmt.Sprintf("/api/v1/payloads/%s/archiveLink", requestId), query)
 			Expect(err).To(BeNil())
 			handler.ServeHTTP(rr, req)
 			Expect(rr.Code).To(Equal(http.StatusUnauthorized))
@@ -499,7 +479,7 @@ var _ = Describe("PayloadArchiveLink", func() {
 
 	Context("Without the required role", func() {
 		It("Should return 403", func() {
-			req, err := makeTestRequest(fmt.Sprintf("/api/v1/payloads/%s/archiveLink", requestId), query)
+			req, err := test.MakeTestRequest(fmt.Sprintf("/api/v1/payloads/%s/archiveLink", requestId), query)
 			Expect(err).To(BeNil())
 			req.Header.Set("x-rh-identity", invalidIdentityHeader)
 			handler.ServeHTTP(rr, req)
@@ -509,7 +489,7 @@ var _ = Describe("PayloadArchiveLink", func() {
 
 	Context("With a valid request_id and the required roles in the Identity header", func() {
 		It("Should return the payload archive's URL", func() {
-			req, err := makeTestRequest(fmt.Sprintf("/api/v1/payloads/%s/archiveLink", requestId), query)
+			req, err := test.MakeTestRequest(fmt.Sprintf("/api/v1/payloads/%s/archiveLink", requestId), query)
 			Expect(err).To(BeNil())
 			req.Header.Set("x-rh-identity", validIdentityHeader)
 

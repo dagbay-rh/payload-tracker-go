@@ -8,6 +8,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/redhatinsights/payload-tracker-go/internal/endpoints"
+	"github.com/redhatinsights/payload-tracker-go/internal/utils/test"
 )
 
 const validIdentityHeader = "eyJpZGVudGl0eSI6IHsiYXNzb2NpYXRlIjp7IlJvbGUiOlsicGxhdGZvcm0tYXJjaGl2ZS1kb3dubG9hZCIsIm90aGVyUm9sZSJdfSwgImFjY291bnRfbnVtYmVyIjogIjAwMDAwMDEiLCAidHlwZSI6ICJTeXN0ZW0iLCAiaW50ZXJuYWwiOiB7Im9yZ19pZCI6ICIwMDAwMDEifX19"
@@ -24,7 +25,7 @@ var _ = Describe("Roles", func() {
 
 		Context("With a missing Identity header", func() {
 			It("Should return 401", func() {
-				req, err := makeTestRequest("/api/v1/roles/archiveLink", query)
+				req, err := test.MakeTestRequest("/api/v1/roles/archiveLink", query)
 				Expect(err).To(BeNil())
 				handler = http.HandlerFunc(endpoints.RolesArchiveLink)
 				rr = httptest.NewRecorder()
@@ -35,7 +36,7 @@ var _ = Describe("Roles", func() {
 
 		Context("Without the required role", func() {
 			It("Should return 403", func() {
-				req, err := makeTestRequest("/api/v1/roles/archiveLink", query)
+				req, err := test.MakeTestRequest("/api/v1/roles/archiveLink", query)
 				Expect(err).To(BeNil())
 				req.Header.Set("x-rh-identity", invalidIdentityHeader)
 				handler = http.HandlerFunc(endpoints.RolesArchiveLink)
@@ -47,7 +48,7 @@ var _ = Describe("Roles", func() {
 
 		Context("With a valid Identity header containing the required role", func() {
 			It("Should return 200", func() {
-				req, err := makeTestRequest("/api/v1/roles/archiveLink", query)
+				req, err := test.MakeTestRequest("/api/v1/roles/archiveLink", query)
 				Expect(err).To(BeNil())
 				req.Header.Set("x-rh-identity", validIdentityHeader)
 				handler = http.HandlerFunc(endpoints.RolesArchiveLink)

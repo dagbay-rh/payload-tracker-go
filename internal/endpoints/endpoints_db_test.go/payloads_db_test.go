@@ -1,6 +1,7 @@
-package endpoints_test
+package endpoints_db_test
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -8,6 +9,7 @@ import (
 	"net/http/httptest"
 	"time"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -42,7 +44,7 @@ var _ = Describe("Payloads with DB", func() {
 			inventoryId := uuid.New().String()
 
 			query["inventory_id"] = inventoryId
-			req, err := makeTestRequest("/api/v1/payloads", query)
+			req, err := test.MakeTestRequest("/api/v1/payloads", query)
 			Expect(err).To(BeNil())
 
 			payloadData := models.Payloads{
@@ -75,9 +77,6 @@ var _ = Describe("Payloads with DB", func() {
 
 			requestId := uuid.New().String()
 
-			req, err := makeTestRequest(fmt.Sprintf("/api/v1/payloads/%s", requestId), query)
-			Expect(err).To(BeNil())
-
 			payloadData := models.Payloads{
 				Account:     "test",
 				RequestId:   requestId,
@@ -104,6 +103,13 @@ var _ = Describe("Payloads with DB", func() {
 			}
 			Expect(db().Create(&payloadStatusData).Error).ToNot(HaveOccurred())
 
+			req, err := test.MakeTestRequest(fmt.Sprintf("/api/v1/payloads/%s", requestId), query)
+			Expect(err).To(BeNil())
+
+			rctx := chi.NewRouteContext()
+			rctx.URLParams.Add("request_id", requestId)
+			req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+
 			handler.ServeHTTP(rr, req)
 
 			Expect(rr.Code).To(Equal(200))
@@ -122,8 +128,7 @@ var _ = Describe("Payloads with DB", func() {
 			Expect(respData.Data[0].SystemID).To(Equal(payloadData.SystemId))
 			Expect(respData.Data[0].Status).To(Equal(payloadStatusData.Status.Name))
 			Expect(respData.Data[0].StatusMsg).To(Equal(payloadStatusData.StatusMsg))
-			Expect(respData.Data[0].Date.String()).To(Equal(payloadStatusData.Date.String()))
-			Expect(respData.Data[1].Source).To(Equal(payloadStatusData.Source.Name))
+			Expect(respData.Data[0].Source).To(Equal(payloadStatusData.Source.Name))
 		})
 	})
 })

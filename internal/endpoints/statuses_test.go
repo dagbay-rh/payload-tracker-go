@@ -12,6 +12,7 @@ import (
 
 	"github.com/redhatinsights/payload-tracker-go/internal/endpoints"
 	"github.com/redhatinsights/payload-tracker-go/internal/structs"
+	"github.com/redhatinsights/payload-tracker-go/internal/utils/test"
 )
 
 var (
@@ -41,7 +42,7 @@ var _ = Describe("Statuses", func() {
 	Describe("Get to statuses endpoint", func() {
 		Context("With a valid request", func() {
 			It("Should return 200", func() {
-				req, err := makeTestRequest("/api/v1/statuses", query)
+				req, err := test.MakeTestRequest("/api/v1/statuses", query)
 				Expect(err).To(BeNil())
 				handler.ServeHTTP(rr, req)
 				Expect(rr.Code).To(Equal(200))
@@ -51,7 +52,7 @@ var _ = Describe("Statuses", func() {
 
 		Context("With valid data from DB", func() {
 			It("should not mutate any data", func() {
-				req, err := makeTestRequest("/api/v1/statuses", query)
+				req, err := test.MakeTestRequest("/api/v1/statuses", query)
 				Expect(err).To(BeNil())
 
 				payloadStatusData := structs.StatusRetrieve{
@@ -91,7 +92,7 @@ var _ = Describe("Statuses", func() {
 		Context("With invalid sort_dir parameter", func() {
 			It("should return HTTP 400", func() {
 				query["sort_dir"] = "ascs"
-				req, err := makeTestRequest("/api/v1/statuses", query)
+				req, err := test.MakeTestRequest("/api/v1/statuses", query)
 				Expect(err).To(BeNil())
 				handler.ServeHTTP(rr, req)
 				Expect(rr.Code).To(Equal(400))
@@ -102,7 +103,7 @@ var _ = Describe("Statuses", func() {
 		Context("With invalid sort_by parameter", func() {
 			It("should return HTTP 400", func() {
 				query["sort_by"] = "account"
-				req, err := makeTestRequest("/api/v1/statuses", query)
+				req, err := test.MakeTestRequest("/api/v1/statuses", query)
 				Expect(err).To(BeNil())
 				handler.ServeHTTP(rr, req)
 				Expect(rr.Code).To(Equal(400))
@@ -125,7 +126,7 @@ var _ = Describe("Statuses", func() {
 				for k, v := range validTimestamps {
 					query = make(map[string]interface{})
 					query[k] = v
-					req, err := makeTestRequest("/api/v1/statuses", query)
+					req, err := test.MakeTestRequest("/api/v1/statuses", query)
 					Expect(err).To(BeNil())
 					handler.ServeHTTP(rr, req)
 					Expect(rr.Code).To(Equal(200))
@@ -149,7 +150,7 @@ var _ = Describe("Statuses", func() {
 				for k, v := range invalidTimestamps {
 					query = make(map[string]interface{})
 					query[k] = v
-					req, err := makeTestRequest("/api/v1/statuses", query)
+					req, err := test.MakeTestRequest("/api/v1/statuses", query)
 					Expect(err).To(BeNil())
 					handler.ServeHTTP(rr, req)
 					Expect(rr.Code).To(Equal(400))
