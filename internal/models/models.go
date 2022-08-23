@@ -5,7 +5,7 @@ import (
 )
 
 type PayloadStatuses struct {
-	ID        uint  `gorm:"primaryKey;not null;autoIncrement"`
+	ID        uint  `gorm:"primaryKey;not null;autoIncrement;type:bigint"`
 	PayloadId uint  `gorm:"not null"`
 	ServiceId int32 `gorm:"not null"`
 	SourceId  int32
@@ -20,7 +20,7 @@ type PayloadStatuses struct {
 }
 
 type Payloads struct {
-	Id          uint      `json:"id" gorm:"primaryKey;not null;autoIncrement"`
+	Id          uint      `json:"id" gorm:"primaryKey;not null;autoIncrement;type:bigint"`
 	RequestId   string    `json:"request_id" gorm:"not null;type:varchar"`
 	Account     string    `json:"account" gorm:"type:varchar"`
 	InventoryId string    `json:"inventory_id" gorm:"type:varchar"`
@@ -40,6 +40,6 @@ type Sources struct {
 }
 
 type Statuses struct {
-	Id   int32  `gorm:"primaryKey;not null;autoIncrement"`
+	Id   int32  `gorm:"primaryKey;not null;autoIncrement;type:bigint"`
 	Name string `gorm:"not null;type:varchar"`
 }

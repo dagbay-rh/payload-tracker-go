@@ -66,6 +66,8 @@ objects:
         env:
           - name: LOG_LEVEL
             value: ${LOGLEVEL}
+          - name: STORAGEBROKERURL
+            value: ${STORAGE_BROKER_URL}
     - name: consumer
       minReplicas: ${{CONSUMER_REPLICAS}}
       podSpec:  
@@ -166,3 +168,5 @@ parameters:
   required: true
 - name: CLEANER_SUSPEND
   value: 'true'
+- name: STORAGE_BROKER_URL
+  value: "http://storage-broker-processor:8000/archive/url"

@@ -10,17 +10,18 @@ import (
 )
 
 type TrackerConfig struct {
-	Environment          string
-	PublicPort           string
-	MetricsPort          string
-	LogLevel             string
-	Hostname             string
-	StorageBrokerURL     string
-	StorageBrokerURLRole string
-	KafkaConfig          KafkaCfg
-	CloudwatchConfig     CloudwatchCfg
-	DatabaseConfig       DatabaseCfg
-	RequestConfig        RequestCfg
+	Environment                 string
+	PublicPort                  string
+	MetricsPort                 string
+	LogLevel                    string
+	Hostname                    string
+	StorageBrokerURL            string
+	StorageBrokerURLRole        string
+	StorageBrokerRequestTimeout int
+	KafkaConfig                 KafkaCfg
+	CloudwatchConfig            CloudwatchCfg
+	DatabaseConfig              DatabaseCfg
+	RequestConfig               RequestCfg
 }
 
 type KafkaCfg struct {
@@ -91,6 +92,7 @@ func Get() *TrackerConfig {
 	// storage broker config
 	options.SetDefault("storageBrokerURL", "http://storage-broker-processor:8000/archive/url")
 	options.SetDefault("storageBrokerURLRole", "platform-archive-download")
+	options.SetDefault("storageBrokerRequestTimeout", 35000)
 
 	if clowder.IsClowderEnabled() {
 		cfg := clowder.LoadedConfig
@@ -136,13 +138,14 @@ func Get() *TrackerConfig {
 	options.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 
 	trackerCfg := &TrackerConfig{
-		Environment:          options.GetString("Environment"),
-		Hostname:             options.GetString("Hostname"),
-		LogLevel:             options.GetString("logLevel"),
-		PublicPort:           options.GetString("publicPort"),
-		MetricsPort:          options.GetString("metricsPort"),
-		StorageBrokerURL:     options.GetString("storageBrokerURL"),
-		StorageBrokerURLRole: options.GetString("storageBrokerURLRole"),
+		Environment:                 options.GetString("Environment"),
+		Hostname:                    options.GetString("Hostname"),
+		LogLevel:                    options.GetString("logLevel"),
+		PublicPort:                  options.GetString("publicPort"),
+		MetricsPort:                 options.GetString("metricsPort"),
+		StorageBrokerURL:            options.GetString("storageBrokerURL"),
+		StorageBrokerURLRole:        options.GetString("storageBrokerURLRole"),
+		StorageBrokerRequestTimeout: options.GetInt("storageBrokerRequestTimeout"),
 		KafkaConfig: KafkaCfg{
 			KafkaTimeout:               options.GetInt("kafka.timeout"),
 			KafkaGroupID:               options.GetString("kafka.group.id"),
@@ -178,10 +181,12 @@ func Get() *TrackerConfig {
 		if broker.Authtype != nil {
 			trackerCfg.KafkaConfig.KafkaUsername = *broker.Sasl.Username
 			trackerCfg.KafkaConfig.KafkaPassword = *broker.Sasl.Password
-			trackerCfg.KafkaConfig.SASLMechanism = "SCRAM-SHA-512"
-			trackerCfg.KafkaConfig.Protocol = "sasl_ssl"
-
-			// write the Kafka CA path using the app-common-go package
+			trackerCfg.KafkaConfig.SASLMechanism = *broker.Sasl.SaslMechanism
+			trackerCfg.KafkaConfig.Protocol = *broker.Sasl.SecurityProtocol
+		}
+		
+		// write the Kafka CA path using the app-common-go package
+		if broker.Cacert != nil {
 			caPath, err := clowder.LoadedConfig.KafkaCa(broker)
 
 			if err != nil {
@@ -189,8 +194,8 @@ func Get() *TrackerConfig {
 			}
 
 			trackerCfg.KafkaConfig.KafkaCA = caPath
-
 		}
+
 
 		// write the RDS CA using the app-common-go package
 		if clowder.LoadedConfig.Database.RdsCa != nil {

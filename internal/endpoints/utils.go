@@ -163,7 +163,12 @@ func writeResponse(w http.ResponseWriter, status int, message string) {
 
 // Send a request for an ArchiveLink to storage-broker
 func requestArchiveLink(r *http.Request, reqID string) (*structs.PayloadArchiveLink, error) {
-	response, err := http.Get(config.Get().StorageBrokerURL + "?request_id=" + reqID)
+	cfg := config.Get()
+	client := http.Client{
+		Timeout: time.Duration(cfg.StorageBrokerRequestTimeout) * time.Millisecond,
+	}
+
+	response, err := client.Get(config.Get().StorageBrokerURL + "?request_id=" + reqID)
 	if err != nil {
 		return nil, err
 	}

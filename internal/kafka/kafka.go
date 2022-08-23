@@ -93,8 +93,7 @@ func NewConsumerEventLoop(
 				handler.onMessage(ctx, e, cfg)
 			case kafka.Error:
 				endpoints.IncConsumeErrors()
-				l.Log.Fatalf("Consumer error: %v (%v)\n", e.Code(), e)
-				break
+				l.Log.Errorf("Consumer error: %v (%v)\n", e.Code(), e)
 			default:
 				l.Log.Infof("Ignored %v\n", e)
 			}
